@@ -6,18 +6,39 @@ class Job(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"Job {self.id}: {self.name}"
+    
+    @property
+    def current_status(self):
+        """Returns latest status for this job, used in serializer"""
+        latest = self.jobStatus.order_by('-timestamp').first()
+        return latest.status_type if latest else "UNKNOWN"
+
 class JobStatus(models.Model):
-    id = models.IntegerField(primary_key=True)
-    job = models.ForeignKey(
-        Job,
-        on_delete=models.CASCADE,
-        related_name='jobStatus',
-        verbose_name='JobStatus Job'
-    ),
-    class Status_Types(models.TextChoices):
+    class StatusTypes(models.TextChoices):
         PENDING = "Pending"
         RUNNING = "Running"
         COMPLETED = "Completed"
         FAILED = "Failed"
-    status_type = models.TextField(max_length=25, choices=Status_Types.choices)
+
+    id = models.AutoField(primary_key=True)
+    job = models.ForeignKey(
+        Job,
+        on_delete=models.CASCADE,
+        related_name='jobStatus',
+        verbose_name='Job Status Entry'
+    ),    
+    status_type = models.CharField(
+        max_length=25, 
+        choices=StatusTypes.choices,
+        default=StatusTypes.PENDING
+        )
     timestamp = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-timestamp'] #latest first
+        verbose_name_plural = "Job Statuses"
+
+    def __str__(self):
+        return f"{self.job} - {self.status_type} at {self.timestamp}"

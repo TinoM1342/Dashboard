@@ -2,35 +2,64 @@ from django.shortcuts import render
 
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from .models import *
-from .serializers import *
+from .models import Job, JobStatus
+from .serializers import (JobListSerializer, JobCreateUpdateSerializer, JobStatusSerializer)
+
 
 @api_view(['GET'])
-def getJobs(request):
+def jobList(request):
+    """GET /api/jobs - List all jobs with current status"""
     jobs = Job.objects.all()
-    serializer = JobSerializer(jobs, many=True)
+    serializer = JobListSerializer(jobs, many=True)
     return Response(serializer.data)
 
 @api_view(['POST'])
-def createJob(request):
-    serializerJob = JobSerializer(data=request.data)
-    serializerJobStatus = JobStatusSerializer(data=request.data)
-
+def jobCreate(request):
+    """POST /api/jobs - Create job + initial PENDING status"""
+    serializerJob = JobCreateUpdateSerializer(data=request.data)
+    
     if serializerJob.is_valid():
         serializerJob.save()
+
+        JobStatus.objects.create(
+            job=job,
+            status_type=JobStatus.StatusTypes.PENDING
+        )
+
+        return Response(JobListSerializer(job).data, status=status.HTTP_201_CREATED)
     
-    if serializerJobStatus.is_valid():
-        serializerJobStatus.save()
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PATCH'])
-def updateJob(request):
-    serializer = JobStatusSerializer(data=request.data)
+def jobUpdate(request, pk):
+    """PATCH /api/jobs/<id>/ - Update job + create new status entry"""
+    try:
+        job = Job.objects.get(pk=pk)
+    except Job.DoesNotExist:
+        return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = JobCreateUpdateSerializer(job,data=request.data, partial=True)
 
     if serializer.is_valid():
         serializer.save()
 
+        new_status = request.data.get('status_type')
+        if new_status in dict(JobStatus.StatusTypes.choices):
+            JobStatus.objects.create(
+                job=job,
+                status_type=new_status
+            )
+        
+        return Response(JobListSerializer(job).data)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['DELETE'])
-def deleteJob(request, pk):
-    job = Job.objects.get(id=pk)
-    job.delete()
-    return Response('Job and statuses deleted')
+def jobDelete(request, pk):
+    """DELETE /api/jobs/<id>/ - Delete job (cascades to JobStatus)"""
+    try:
+        job = Job.objects.get(pk=pk)
+        job.delete()
+        return Response({"message": "Job and all statuses deleted"}, status=status.HTTP_204_NO_CONTENT)
+    except Job.DoesNotExist:
+        return Response({"error": "Job not found"}, status=status.HTTP_404_NOT_FOUND)
