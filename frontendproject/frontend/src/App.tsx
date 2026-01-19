@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { getJobs, createJob, updateJob, deleteJob } from './api/api.tsx';
+import { useState, useEffect } from 'react';
+import { getJobs, createJob, updateJob, deleteJob as apiDeleteJob } from './api/api';  // Renamed to avoid conflict
 
 type Job = {
   id: number;
@@ -8,38 +8,61 @@ type Job = {
 };
 
 function App() {
-
-  const [jobs, setJobs] = useState<Job[]>([
-    { id: 1, name: 'Process monthly report', status: 'running' },
-    { id: 2, name: 'Backup database', status: 'pending' },
-    { id: 3, name: 'Send newsletter', status: 'completed' },
-    { id: 4, name: 'Generate invoice', status: 'failed' },
-  ]);
-
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [newJobName, setNewJobName] = useState('');
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const apiJobs = await getJobs();
+        setJobs(apiJobs.map((job) => ({
+          id: job.id,
+          name: job.name,
+          status: job.current_status.toLowerCase() as Job['status'],  // Map API's capitalized status (e.g., "Pending") to lowercase
+        })));
+      } catch (error) {
+        console.error('Failed to fetch jobs:', error);
+      }
+    };
+    fetchJobs();
+  }, []);
 
   const addJob = async () => {
     if (!newJobName.trim()) return;
     try {
       const newJobFromApi = await createJob({ name: newJobName.trim() });
-      setJobs((prev) => [...prev, { ...newJobFromApi, status: 'pending' }]);
+      setJobs((prev) => [...prev, {
+        id: newJobFromApi.id,
+        name: newJobFromApi.name,
+        status: newJobFromApi.current_status.toLowerCase() as Job['status'],
+      }]);
       setNewJobName('');
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Failed to create job:', error);
-    }    
+    }
   };
 
-  const deleteJob = (id: number) => {
-    setJobs((prev) => prev.filter((job) => job.id !== id));
+  const removeJob = async (id: number) => {
+    try {
+      await apiDeleteJob(id);
+      setJobs((prev) => prev.filter((job) => job.id !== id));
+    } catch (error) {
+      console.error('Failed to delete job:', error);
+    }
   };
 
-  const updateStatus = (id: number, newStatus: Job['status']) => {
-    setJobs((prev) =>
-      prev.map((job) =>
-        job.id === id ? { ...job, status: newStatus } : job
-      )
-    );
+  const updateStatus = async (id: number, newStatus: Job['status']) => {
+    const titleCasedStatus = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+    try {
+      const updatedJobFromApi = await updateJob(id, { status_type: titleCasedStatus });  // Send capitalized (e.g., "PENDING") to match Django
+      setJobs((prev) =>
+        prev.map((job) =>
+          job.id === id ? { ...job, status: updatedJobFromApi.current_status.toLowerCase() as Job['status'] } : job
+        )
+      );
+    } catch (error) {
+      console.error('Failed to update job:', error);
+    }
   };
 
   return (
@@ -68,7 +91,10 @@ function App() {
                     <td className="py-4 text-center">
                       <select
                         value={job.status}
-                        onChange={(e) => updateStatus(job.id, e.target.value as Job['status'])}
+                        onChange={(e) => {
+                          console.log('Select changed for job', job.id, 'to', e.target.value);  // Debug: Confirm events fire
+                          updateStatus(job.id, e.target.value as Job['status']);
+                        }}
                         className="bg-gray-800 text-white border border-gray-600 rounded-md px-2 py-1 focus:outline-none focus:border-blue-500"
                       >
                         <option value="pending">Pending</option>
@@ -78,7 +104,7 @@ function App() {
                       </select>
                     </td>
                     <td className="py-4 text-center">
-                      <button onClick={() => deleteJob(job.id)} className="text-red-400 hover:text-red-300">
+                      <button onClick={() => removeJob(job.id)} className="text-red-400 hover:text-red-300">
                         Delete
                       </button>
                     </td>
