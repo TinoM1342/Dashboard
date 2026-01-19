@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:12
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=postgres  # Match settings.py fallback
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"  # Optional for local psql access
+
+  backend:
+    build:
+      context: ./backendproject
+      dockerfile: Dockerfile
+    command: > 
+      sh -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backendproject:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - PG_DB=postgres
+      - PG_USER=postgres
+      - PG_PASSWORD=postgres
+      - PG_HOST=db  # Service name
+      - PG_PORT=5432
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    volumes:
+      - ./frontendproject:/frontend/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"  # Or "5174:5173" if conflicting
+    environment:
+      - VITE_PROXY_TARGET=http://backend:8000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
