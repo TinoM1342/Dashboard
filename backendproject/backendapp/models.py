@@ -28,7 +28,7 @@ class JobStatus(models.Model):
         on_delete=models.CASCADE,
         related_name='jobStatus',
         verbose_name='Job Status Entry'
-    ),    
+    )    
     status_type = models.CharField(
         max_length=25, 
         choices=StatusTypes.choices,

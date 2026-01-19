@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Panel } from './components/Panel'; // adjust path if needed
+import { getJobs, createJob, updateJob, deleteJob } from './api/api.tsx';
 
 type Job = {
   id: number;
@@ -8,6 +8,7 @@ type Job = {
 };
 
 function App() {
+
   const [jobs, setJobs] = useState<Job[]>([
     { id: 1, name: 'Process monthly report', status: 'running' },
     { id: 2, name: 'Backup database', status: 'pending' },
@@ -17,15 +18,16 @@ function App() {
 
   const [newJobName, setNewJobName] = useState('');
 
-  const addJob = () => {
+  const addJob = async () => {
     if (!newJobName.trim()) return;
-    const newJob: Job = {
-      id: Date.now(),
-      name: newJobName.trim(),
-      status: 'pending',
-    };
-    setJobs((prev) => [...prev, newJob]);
-    setNewJobName('');
+    try {
+      const newJobFromApi = await createJob({ name: newJobName.trim() });
+      setJobs((prev) => [...prev, { ...newJobFromApi, status: 'pending' }]);
+      setNewJobName('');
+    }
+    catch (error) {
+      console.error('Failed to create job:', error);
+    }    
   };
 
   const deleteJob = (id: number) => {
