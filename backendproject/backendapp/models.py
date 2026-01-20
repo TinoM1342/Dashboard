@@ -14,6 +14,15 @@ class Job(models.Model):
         """Returns latest status for this job, used in serializer"""
         latest = self.jobStatus.order_by('-timestamp').first()
         return latest.status_type if latest else "UNKNOWN"
+    
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=['name'],  
+                include=['created_at'],  
+                name='job_name_covering_idx'
+            ),
+        ]
 
 class JobStatus(models.Model):
     class StatusTypes(models.TextChoices):
@@ -39,6 +48,13 @@ class JobStatus(models.Model):
     class Meta:
         ordering = ['-timestamp'] #latest first
         verbose_name_plural = "Job Statuses"
+        indexes = [
+            models.Index(
+                fields=['job', '-timestamp'],  # Key columns (matches common queries and ordering)
+                include=['status_type'],  # Covering column (frequently selected)
+                name='jobstatus_latest_covering_idx'
+            ),
+        ]
 
     def __str__(self):
         return f"{self.job} - {self.status_type} at {self.timestamp}"
