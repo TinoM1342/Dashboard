@@ -7,7 +7,10 @@ up:
 
 # Runs Playwright E2E tests (assumes tests are in frontendproject/frontend)
 test:
-	cd frontendproject/frontend && npx playwright test
+	cd frontendproject/frontend && \
+	npm install && \
+	npx playwright install --with-deps && \
+	npx playwright test
 
 # Stops the running Docker containers
 stop:
