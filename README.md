@@ -15,54 +15,14 @@ Performance Considerations
         
 Architecture
 
-Diagram to be used in a mermaid viewer below:
----
-config:
-  layout: fixed
----
-flowchart TB
- subgraph subGraph0["Host Machine (Your Computer)"]
-        DC["docker compose"]
-        Make["make up / make test"]
-        PW["npx playwright test"]
-        NPM["npm run dev → Vite"]
-        Report["Playwright HTML Report"]
-        Browser["Your Browser"]
-  end
- subgraph subGraph1["Docker Network (rescale_dashboard_default)"]
-        DB[("Postgres DB<br>port 5432<br>service: db")]
-        BE["Django Backend<br>runserver 0.0.0.0:8000<br>service: backend"]
-        FE["Vite Frontend<br>dev server<br>port 5173<br>service: frontend"]
-  end
-    Make -- runs commands --> DC
-    Make -- runs --> PW & NPM
-    Browser -- opens --> Report
-    DC -- starts / manages --> DB & BE & FE
-    FE <-- HTTP requests to /api/* (via proxy or localhost:8000) --> BE
-    BE <-- psycopg2 connection to port 5432 --> DB
-    PW -- controls browser + makes API calls --> FE
-    PW -- direct API calls via request fixture --> BE
-    Browser -- http://localhost:8000 --> BE
-    Browser -- http://localhost:5173 --> FE
+Host ──▶ make ──▶ docker compose ──▶ 3 containers:
+                     ├─ db (Postgres:5432)
+                     ├─ backend (Django:8000) ↔ db
+                     └─ frontend (Vite:5173) ↔ backend
 
-     Make:::default
-     Make:::host
-     DC:::default
-     PW:::default
-     PW:::host
-     NPM:::default
-     NPM:::host
-     Browser:::default
-     Browser:::host
-     Report:::default
-     Report:::host
-     DB:::default
-     DB:::db
-     BE:::default
-     BE:::container
-     FE:::default
-     FE:::container
-    classDef default fill:#ffffff,stroke:#333,stroke-width:2px,color:#000000
-    classDef host fill:#f9f9f9,stroke:#333,stroke-width:2px,color:#000000
-    classDef container fill:#e6f0ff,stroke:#333,color:#000000
-    classDef db fill:#e6ffe6,stroke:#333,color:#000000
+Host ──▶ make test ──▶ playwright ──▶ controls browser
+                                     ├─ interacts with http://localhost:5173 (frontend)
+                                     └─ expects network calls to http://localhost:8000 (backend)
+
+Browser ──▶ http://localhost:8000 ──▶ backend API
+Browser ──▶ http://localhost:5173 ──▶ Vite dev UI
