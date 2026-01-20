@@ -9,6 +9,11 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"  # Optional for local psql access
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
