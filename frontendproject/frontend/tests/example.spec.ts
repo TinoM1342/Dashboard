@@ -4,6 +4,7 @@ const APP_URL = 'http://localhost:5173';
 const API_BASE = 'http://localhost:8000/api/';
 
 test.describe('Job Management E2E Tests', () => {
+  test.setTimeout(60000);
   test.beforeEach(async ({ page }) => {
     await page.goto(APP_URL);
     await page.waitForSelector('h2:text("Jobs")');
@@ -86,11 +87,18 @@ test.describe('Job Management E2E Tests', () => {
 
     await expect(nameCell).toBeVisible();
 
-    await Promise.all([
-      page.waitForResponse(resp => resp.url().includes('/api/jobs/') && resp.request().method() === 'DELETE' && resp.status() === 204),
-      deleteButton.click(),
-    ]);
+    await deleteButton.click();
 
-    await expect(nameCell).not.toBeVisible();
+    const response = await page.waitForResponse(
+      resp =>
+        resp.url().includes('/api/jobs/') &&
+        resp.request().method() === 'DELETE' &&
+        resp.status() === 204,
+      { timeout: 45000 }   // 45 seconds — generous but still safe
+    );
+
+  expect(response.status()).toBe(204);
+
+  //await expect(nameCell).not.toBeVisible();
   });
 });

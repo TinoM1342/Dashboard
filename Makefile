@@ -22,10 +22,6 @@ build:
 up: free-port
 	docker compose up -d
 
-show-report:
-	@echo "Opening Playwright test report..."
-	@cd frontendproject/frontend && npx playwright show-report || echo "Report not found. Run 'make test' first."
-
 # Runs Playwright E2E tests (assumes tests are in frontendproject/frontend)
 test:
 	@echo "Checking and preparing services for testing..."
@@ -64,9 +60,11 @@ test:
 	@echo "Running Playwright tests..."
 	@cd frontendproject/frontend && npx playwright test || true
 
+	@echo "Opening report..."
+	@cd frontendproject/frontend && npx playwright show-report || echo "No report generated."
+
 	@echo "Tests complete. (Services remain running - use 'make stop' to shut down if desired.)"
 
-	show-report
 # Stops the running Docker containers
 stop:
 	docker compose stop
