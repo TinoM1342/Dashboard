@@ -1,10 +1,35 @@
 PORT := 5432
 
+# ──────────────────────────────────────────────────────────────────────────────
+# One-time setup after fresh clone
+# ──────────────────────────────────────────────────────────────────────────────
+
+setup: install-frontend-deps install-playwright-browsers
+	@echo ""
+	@echo "──────────────────────────────────────────────────────────────"
+	@echo "Setup complete! You can now run:"
+	@echo "  make test        → run E2E tests + open report"
+	@echo "  make up          → start the full stack"
+	@echo "  make show-report → view last test report (if needed)"
+	@echo "──────────────────────────────────────────────────────────────"
+
+install-frontend-deps:
+	@echo "Installing frontend dependencies (npm install)..."
+	@cd frontendproject/frontend && npm install
+
+install-playwright-browsers:
+	@echo "Installing Playwright browsers (this may take a few minutes)..."
+	@cd frontendproject/frontend && npx playwright install --with-deps
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Core targets
+# ──────────────────────────────────────────────────────────────────────────────
+
 free-port:
-	@echo "Ensuring port $(DB_HOST_PORT) is free..."
-	@if sudo lsof -i :$(DB_HOST_PORT) > /dev/null 2>&1; then \
+	@echo "Ensuring port $(PORT) is free..."
+	@if sudo lsof -i :$(PORT) > /dev/null 2>&1; then \
 		echo "Port in use → killing processes..."; \
-		sudo kill -9 $$(sudo lsof -t -i :$(DB_HOST_PORT)) 2>/dev/null || true; \
+		sudo kill -9 $$(sudo lsof -t -i :$(PORT)) 2>/dev/null || true; \
 		sleep 2; \
 	else \
 		echo "Port appears free."; \
@@ -13,21 +38,17 @@ free-port:
 	@sudo systemctl stop postgresql >/dev/null 2>&1 || true
 	@sleep 1
 	@echo "Final check:"
-	@sudo lsof -i :$(DB_HOST_PORT) || echo "Port is clear."
+	@sudo lsof -i :$(PORT) || echo "Port is clear."
 
 build:
 	docker compose build
 
-# Starts the entire application stack (db, backend, frontend) in detached mode
-up: free-port
+up: setup free-port
 	docker compose up -d
 
-# Runs Playwright E2E tests (assumes tests are in frontendproject/frontend)
-test:
+# The main command for checking the application
+test: setup free-port
 	@echo "Checking and preparing services for testing..."
-
-
-
 	@if lsof -i :$(PORT) > /dev/null 2>&1; then \
 		echo "Freeing port $(PORT)..."; \
 		sudo kill -9 $$(lsof -t -i :$(PORT)) 2>/dev/null || true; \
@@ -65,10 +86,18 @@ test:
 
 	@echo "Tests complete. (Services remain running - use 'make stop' to shut down if desired.)"
 
-# Stops the running Docker containers
+show-report:
+	@if [ -d "frontendproject/frontend/playwright-report" ]; then \
+		echo "Opening Playwright test report..."; \
+		cd frontendproject/frontend && npx playwright show-report; \
+	else \
+		echo "No report directory found in frontendproject/frontend/playwright-report"; \
+		echo "Run 'make test' first to generate one."; \
+		exit 1; \
+	fi
+
 stop:
 	docker compose stop
 
-# Removes containers, volumes, and networks for a clean slate
 clean:
 	docker compose down -v --remove-orphans
