@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-const APP_URL = 'http://localhost:5173';
-const API_BASE = 'http://localhost:8000/api/';
+const APP_URL = 'http://frontend:5173';
+const API_BASE = 'http://backend:8000/api/';
 
 test.describe('Job Management E2E Tests', () => {
   test.setTimeout(60000);
   test.beforeEach(async ({ page }) => {
-    await page.goto(APP_URL);
-    await page.waitForSelector('h2:text("Jobs")');
+    await page.goto(APP_URL, { waitUntil: 'networkidle', timeout: 90000});
+    await page.waitForSelector('h2:text("Jobs")', { timeout: 30000});
   });
 
   test.afterEach(async ({ page }) => {

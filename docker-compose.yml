@@ -1,14 +1,16 @@
+version: "3.9"
+
 services:
   db:
     image: postgres:12
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_DB=postgres  # Match settings.py fallback
+      - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
-      - "5432:5432"  # Optional for local psql access
+      - "5432:5432"  # Optional – remove if not needed for local debugging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
@@ -19,7 +21,7 @@ services:
     build:
       context: ./backendproject
       dockerfile: Dockerfile
-    command: > 
+    command: >
       sh -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backendproject:/app
@@ -29,10 +31,17 @@ services:
       - PG_DB=postgres
       - PG_USER=postgres
       - PG_PASSWORD=postgres
-      - PG_HOST=db  # Service name
+      - PG_HOST=db
       - PG_PORT=5432
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c 'cat < /dev/null > /dev/tcp/localhost/8000' 2>/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   frontend:
     build:
@@ -40,13 +49,29 @@ services:
       dockerfile: Dockerfile.frontend
     volumes:
       - ./frontendproject:/frontend/app
-      - /app/node_modules
+      - /frontend/app/node_modules  # ← keep this to avoid overwriting node_modules
     ports:
-      - "5173:5173"  # Or "5174:5173" if conflicting
+      - "5173:5173"
     environment:
       - VITE_PROXY_TARGET=http://backend:8000
     depends_on:
       - backend
+    command: npm run dev
+
+  e2e-tests:
+    image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    working_dir: /app
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./frontendproject/frontend:/app
+      - playwright-browsers:/ms-playwright
+    command: sh -c "sleep 30 && npx playwright test"
+    environment:
+      - CI=true
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 volumes:
   postgres_data:
+  playwright-browsers:
