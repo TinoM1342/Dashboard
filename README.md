@@ -1,4 +1,4 @@
-# Rescale_Dashboard
+# Dashboard
 
 Problem Approach:
     Sketched on paper diagrams on how to break, order and connect how each component would work. From there ended up following a blog on how to get the backend up and running(https://dev.to/francescoxx/python-crud-rest-api-using-django-postgres-docker-and-docker-compose-4nhe) 
