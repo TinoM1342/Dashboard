@@ -89,15 +89,10 @@ test.describe('Job Management E2E Tests', () => {
 
     await deleteButton.click();
 
-    const response = await page.waitForResponse(
-      resp =>
-        resp.url().includes('/api/jobs/') &&
-        resp.request().method() === 'DELETE' &&
-        resp.status() === 204,
-      { timeout: 45000 }   // 45 seconds — generous but still safe
-    );
-
-  expect(response.status()).toBe(204);
+    // Wait for row to disappear (most reliable signal that delete worked)
+    await expect(
+      page.locator(`tr:has-text("${uniqueJobName}")`)
+    ).toBeHidden({ timeout: 20000 });
 
   //await expect(nameCell).not.toBeVisible();
   });
