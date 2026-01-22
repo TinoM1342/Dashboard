@@ -1,24 +1,7 @@
-# Dockerfile.frontend
-FROM node:20-alpine
+FROM mcr.microsoft.com/playwright:v1.57.0-jammy
 
 WORKDIR /app
-
-# Debug: List files in context to verify
-RUN ls -la /app || true
-RUN ls -la ..  # Parent dir
-RUN ls -la ../frontendproject || echo "frontendproject not found"
-RUN ls -la ../frontendproject/frontend || echo "frontend not found"
-
-# Copy package files and install dependencies
-COPY frontendproject/frontend/package*.json ./
-RUN npm install
-RUN apk add --no-cache curl
-
-# Copy app source
-COPY frontendproject/frontend ./
-
-# Expose Vite port
-EXPOSE 5173
-
-# Dev command with hot-reload
-CMD ["npm", "run", "dev", "--", "--host"]
+COPY package*.json ./
+RUN npm ci
+COPY . .
+CMD ["npx", "playwright", "test"]
