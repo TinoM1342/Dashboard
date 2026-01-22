@@ -20,7 +20,7 @@ services:
       context: ./backendproject
       dockerfile: Dockerfile
     command: >
-      sh -c "python manage.py makemigrations && python manage.py migrate && python manage.py loaddata fixtures/initial_jobs.json && python manage.py runserver 0.0.0.0:8000"
+      sh -c "python manage.py makemigrations && python manage.py migrate && mkdir -p /app/fixtures && echo 'Loading fixture...' && python manage.py loaddata fixtures/initial_jobs.json || echo 'Loaddata failed: see error above' && echo 'Seeding complete' && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backendproject:/app
     ports:

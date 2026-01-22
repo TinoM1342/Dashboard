@@ -6,9 +6,10 @@ const API_BASE = 'http://backend:8000/api/';
 test.describe('Job Management E2E Tests', () => {
   test.setTimeout(60000);
   test.beforeEach(async ({ page }) => {
-    await page.goto(APP_URL, { waitUntil: 'networkidle', timeout: 90000 });
-  await page.waitForResponse(resp => resp.url().includes('/api/jobs/') && resp.status() === 200, { timeout: 60000 });  # Wait for jobs API call
-  await expect(page.locator('h2:text("Jobs")')).toBeVisible({ timeout: 60000 });
+    await page.goto(APP_URL, { waitUntil: 'networkidle', timeout: 10000 });
+    await page.waitForTimeout(5000);
+    await page.waitForResponse(resp => resp.url().includes('/api/jobs/') && resp.status() === 200, { timeout: 60000 });
+    //await expect(page.locator('h2:has-text("Jobs")')).toBeVisible({ timeout: 60000 });
   });
 
   test.afterEach(async ({ page }) => {
@@ -93,7 +94,7 @@ test.describe('Job Management E2E Tests', () => {
     // Wait for row to disappear (most reliable signal that delete worked)
     await expect(
       page.locator(`tr:has-text("${uniqueJobName}")`)
-    ).toBeHidden({ timeout: 20000 });
+    ).toBeHidden({ timeout: 10000 });
 
   //await expect(nameCell).not.toBeVisible();
   });

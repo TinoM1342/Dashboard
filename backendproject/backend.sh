@@ -30,5 +30,9 @@ echo "Starting Migrations"
 python manage.py migrate
 echo =====================================
 
+echo 'Loading fixture...'
+mkdir -p /app/fixtures
+python manage.py loaddata fixtures/initial_jobs.json
+
 echo "Starting Server..."
 python manage.py runserver 0.0.0.0:8000

@@ -12,6 +12,7 @@ function App() {
   const [newJobName, setNewJobName] = useState('');
 
   useEffect(() => {
+    console.log('Fetching jobs from backend');
     const fetchJobs = async () => {
       try {
         const apiJobs = await getJobs();
@@ -28,6 +29,7 @@ function App() {
   }, []);
 
   const addJob = async () => {
+    console.log('Creating job..');
     if (!newJobName.trim()) return;
     try {
       const newJobFromApi = await createJob({ name: newJobName.trim() });
@@ -44,6 +46,7 @@ function App() {
 
   const removeJob = async (id: number) => {
     try {
+      console.log('deleting job..');
       await apiDeleteJob(id);
       setJobs((prev) => prev.filter((job) => job.id !== id));
     } catch (error) {
@@ -54,6 +57,7 @@ function App() {
   const updateStatus = async (id: number, newStatus: Job['status']) => {
     const titleCasedStatus = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
     try {
+      console.log('Updating job status..');
       const updatedJobFromApi = await updateJob(id, { status_type: titleCasedStatus });  // Send capitalized (e.g., "PENDING") to match Django
       setJobs((prev) =>
         prev.map((job) =>
