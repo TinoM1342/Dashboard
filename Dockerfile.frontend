@@ -12,6 +12,7 @@ RUN ls -la ../frontendproject/frontend || echo "frontend not found"
 # Copy package files and install dependencies
 COPY frontendproject/frontend/package*.json ./
 RUN npm install
+RUN apk add --no-cache curl
 
 # Copy app source
 COPY frontendproject/frontend ./
