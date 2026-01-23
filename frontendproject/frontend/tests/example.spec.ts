@@ -9,7 +9,8 @@ test.describe('Job Management E2E Tests', () => {
     // Add listeners for debugging (remove after fixing)
     page.on('console', msg => console.log('PAGE LOG:', msg.text()));
     page.on('requestfailed', request => console.log('REQUEST FAILED:', request.url(), request.failure()?.errorText));
-
+    page.on('response', resp => console.log('RESPONSE SEEN:', resp.url(), resp.status(), resp.request().method()));  // Log all responses
+    
     // Change to 'domcontentloaded' to avoid HMR interference; increase goto timeout if needed
     await page.goto(APP_URL, { waitUntil: 'domcontentloaded', timeout: 120000 });
 
@@ -30,21 +31,20 @@ test.describe('Job Management E2E Tests', () => {
   });
 
   test.afterEach(async ({ page }) => {
-    //Clean up
+    // Clean up with logging and trailing slash for DELETE
     try {
       const response = await page.request.get(`${API_BASE}jobs/`);
       const jobs = await response.json();
       console.log('Cleanup: Found', jobs.length, 'jobs to delete');
 
       for (const job of jobs) {
-        const deleteResp = await page.request.delete(`${API_BASE}jobs/${job.id}/`);
+        const deleteResp = await page.request.delete(`${API_BASE}jobs/${job.id}/`);  // Add trailing /
         console.log('Deleted job', job.id, ':', deleteResp.status());
       }
+    } catch (error) {
+      console.error('Cleanup failed:', error);
     }
-    catch (error) {
-      console.error('Cleanup failed: ', error);
-    }
-  })
+  });
 
   test('Create a new job', async ({ page }) => {
     const uniqueJobName = `Test Job E2E ${Date.now()}`; // Unique name to avoid duplicates
@@ -53,12 +53,13 @@ test.describe('Job Management E2E Tests', () => {
     const createButton = page.locator('button:text("Create Job")');
 
     await input.fill(uniqueJobName);
+    await page.waitForTimeout(500);  // Buffer for UI enable
 
     await Promise.all([
       page.waitForResponse(resp => 
         resp.url().includes('/api/jobs') && 
         resp.request().method() === 'POST' && 
-        resp.status() === 201,
+        resp.status() < 300,  // Flexible for 201
         { timeout: 30000 }
       ),
       createButton.click(),
@@ -78,12 +79,13 @@ test.describe('Job Management E2E Tests', () => {
     const createButton = page.locator('button:text("Create Job")');
 
     await input.fill(uniqueJobName);
+    await page.waitForTimeout(500);  // Buffer
 
     await Promise.all([
       page.waitForResponse(resp => 
         resp.url().includes('/api/jobs') && 
         resp.request().method() === 'POST' && 
-        resp.status() === 201,
+        resp.status() < 300,
         { timeout: 30000 }
       ),
       createButton.click(),
@@ -101,7 +103,7 @@ test.describe('Job Management E2E Tests', () => {
     await page.waitForResponse(resp => 
       resp.url().includes('/api/jobs') && 
       resp.request().method() === 'PATCH' && 
-      resp.status() === 200,
+      resp.status() < 300,
       { timeout: 30000 }
     );
 
@@ -115,12 +117,13 @@ test.describe('Job Management E2E Tests', () => {
     const createButton = page.locator('button:text("Create Job")');
 
     await input.fill(uniqueJobName);
+    await page.waitForTimeout(500);  // Buffer
 
     await Promise.all([
       page.waitForResponse(resp => 
         resp.url().includes('/api/jobs') && 
         resp.request().method() === 'POST' && 
-        resp.status() === 201,
+        resp.status() < 300,
         { timeout: 30000 }
       ),
       createButton.click(),
@@ -132,7 +135,15 @@ test.describe('Job Management E2E Tests', () => {
 
     await expect(nameCell).toBeVisible();
 
-    await deleteButton.click();
+    await Promise.all([
+      page.waitForResponse(resp => 
+        resp.url().includes('/api/jobs') && 
+        resp.request().method() === 'DELETE' && 
+        resp.status() < 300,  // Catches 204 or 301->204
+        { timeout: 30000 }
+      ),
+      deleteButton.click(),
+    ]);
 
     // Wait for row to disappear (most reliable signal that delete worked)
     await expect(

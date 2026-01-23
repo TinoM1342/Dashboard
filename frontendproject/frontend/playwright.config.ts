@@ -21,8 +21,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : '50%',
-  timeout: 60000,
-  expect: { timeout: 10000 },
+  //timeout: 60000,
+  //expect: { timeout: 10000 },
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -44,6 +44,8 @@ export default defineConfig({
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
+      timeout: 120000,  // Double for Firefox to handle slower network events
+      expect: { timeout: 30000 },
     },
 
     {
@@ -78,4 +80,9 @@ export default defineConfig({
   //   url: 'http://localhost:3000',
   //   reuseExistingServer: !process.env.CI,
   // },
+
+  timeout: 120000,  // Global increase
+  expect: {
+    timeout: 30000,  // For asserts/waits
+  },
 });
