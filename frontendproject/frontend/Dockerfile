@@ -50,7 +50,7 @@ RUN npm ci
 COPY . .
 
 # Install Playwright + browsers + OS deps inside the container
-RUN npx playwright install --with-deps chromium firefox webkit
+RUN npx playwright install --with-deps chromium
 
 # Expose Vite dev port (optional, only if you keep dev mode)
 EXPOSE 5173

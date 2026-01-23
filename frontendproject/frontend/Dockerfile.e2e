@@ -9,7 +9,7 @@ RUN npm ci --only=production  # faster than full install
 COPY . .
 
 # Install Playwright + browsers inside container
-RUN npx playwright install --with-deps chromium firefox webkit
+RUN npx playwright install --with-deps chromium
 
 # Copy test files (or mount them via volume)
 COPY tests/ ./tests/
