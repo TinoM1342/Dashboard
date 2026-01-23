@@ -75,6 +75,7 @@ services:
         condition: service_healthy
     volumes:
       - playwright-browsers:/ms-playwright
+      - ./frontendproject/frontend/playwright-report:/app/playwright-report
     command: sh -c "npm cache clean --force && rm -rf /app/node_modules && npm ci && npx playwright install --with-deps && npx playwright test"
     environment:
       - CI=true
