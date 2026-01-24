@@ -1,5 +1,7 @@
 # Dashboard
 
+To run: go to root directory where make file is and test with sudo make test, since the project checks no processes are using ports 5173 and 8000 and removes them.
+
 Problem Approach:
     Sketched on paper diagrams on how to break, order and connect how each component would work. From there ended up following a blog on how to get the backend up and running(https://dev.to/francescoxx/python-crud-rest-api-using-django-postgres-docker-and-docker-compose-4nhe) 
 
